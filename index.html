@@ -688,6 +688,46 @@
       render();
     }
 
+    function handleKeyDown(event, index, field) {
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        
+        if (event.shiftKey) {
+          // Shift+Tab - go backwards
+          if (field === 'qty') {
+            // Shift+Tab from Qty to Z Series in same row
+            const zSeriesInput = document.querySelector(`input[data-row="${index}"][data-field="zSeries"]`);
+            if (zSeriesInput) zSeriesInput.focus();
+          } else if (field === 'zSeries') {
+            // Shift+Tab from Z Series to previous row's Qty
+            const prevIndex = index - 1;
+            if (prevIndex >= 0) {
+              const prevInput = document.querySelector(`input[data-row="${prevIndex}"][data-field="qty"]`);
+              if (prevInput) prevInput.focus();
+            }
+          }
+        } else {
+          // Regular Tab - go forwards
+          if (field === 'zSeries') {
+            // Tab from Z Series to Qty in same row
+            const qtyInput = document.querySelector(`input[data-row="${index}"][data-field="qty"]`);
+            if (qtyInput) qtyInput.focus();
+          } else if (field === 'qty') {
+            // Tab from Qty to next row's Z Series
+            const nextIndex = index + 1;
+            if (nextIndex < 50) {
+              const nextInput = document.querySelector(`input[data-row="${nextIndex}"][data-field="zSeries"]`);
+              if (nextInput) nextInput.focus();
+            } else {
+              // If on last row, tab to copy button if it exists
+              const copyButton = document.getElementById('copyButton');
+              if (copyButton) copyButton.focus();
+            }
+          }
+        }
+      }
+    }
+
     function copyResults() {
       const results = rows
         .filter(r => r.result)
@@ -742,19 +782,23 @@
                         type="text"
                         value="${row.zSeries}"
                         onchange="handleInputChange(${actualIndex}, 'zSeries', this.value)"
+                        onkeydown="handleKeyDown(event, ${actualIndex}, 'zSeries')"
                         placeholder="Enter part #"
                         class="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 select-none pointer-events-auto"
                         style="border-color: #878787; user-select: none"
-                        tabindex="${actualIndex * 2 + 1}"
+                        data-row="${actualIndex}"
+                        data-field="zSeries"
                       />
                       <input
                         type="text"
                         value="${row.qty}"
                         onchange="handleInputChange(${actualIndex}, 'qty', this.value)"
+                        onkeydown="handleKeyDown(event, ${actualIndex}, 'qty')"
                         placeholder="1"
                         class="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 select-none pointer-events-auto"
                         style="border-color: #878787; user-select: none"
-                        tabindex="${actualIndex * 2 + 2}"
+                        data-row="${actualIndex}"
+                        data-field="qty"
                       />
                       ${row.result ? `
                         <div class="px-3 py-2 rounded text-sm font-mono select-none" style="background-color: #f0f0f0; color: #0033A0">
@@ -794,6 +838,7 @@
               </div>
               ${rows.filter(r => r.result).length > 0 ? `
                 <button
+                  id="copyButton"
                   onclick="copyResults()"
                   class="text-white px-4 py-2 rounded text-sm font-medium transition-colors hover:opacity-90"
                   style="background-color: #0033A0"
@@ -809,6 +854,7 @@
 
     // Make functions globally accessible
     window.handleInputChange = handleInputChange;
+    window.handleKeyDown = handleKeyDown;
     window.copyResults = copyResults;
 
     // Initial render
